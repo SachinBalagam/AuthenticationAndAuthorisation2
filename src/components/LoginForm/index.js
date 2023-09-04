@@ -1,4 +1,6 @@
 import {Component} from 'react'
+import Cookies from 'js-cookie'
+import {Redirect} from 'react-router-dom'
 
 import './index.css'
 
@@ -6,9 +8,16 @@ class LoginForm extends Component {
   state = {
     username: '',
     password: '',
+    errorMsg: '',
+    showSubmitError: false,
   }
 
-  onSubmitSuccess = () => {
+  onSubmitFailure = data => {
+    this.setState({showSubmitError: true, errorMsg: data})
+  }
+
+  onSubmitSuccess = jwtToken => {
+    Cookies.set('jwt_token', jwtToken, {expires: 30})
     const {history} = this.props
     history.replace('/')
   }
@@ -26,7 +35,9 @@ class LoginForm extends Component {
     const data = await response.json()
     console.log(data)
     if (response.ok === true) {
-      this.onSubmitSuccess()
+      this.onSubmitSuccess(data.jwt_token)
+    } else {
+      this.onSubmitFailure(data.error_msg)
     }
   }
 
@@ -75,6 +86,11 @@ class LoginForm extends Component {
   }
 
   render() {
+    const {showSubmitError, errorMsg} = this.state
+    const jwtToken = Cookies.get('jwt_token')
+    if (jwtToken !== undefined) {
+      return <Redirect to="/" />
+    }
     return (
       <div className="login-form-container">
         <img
@@ -98,6 +114,7 @@ class LoginForm extends Component {
           <button type="submit" className="login-button">
             Login
           </button>
+          {showSubmitError && <p className="error-message">*{errorMsg}</p>}
         </form>
       </div>
     )
